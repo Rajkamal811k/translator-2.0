@@ -1,0 +1,79 @@
+/* ===== CSS Reset & Design Tokens ===== */
+:root {
+  /* Soft Pastel Palette */
+  --bg-primary: #f8f6ff;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-hover: #f0edff;
+  --bg-accent: linear-gradient(135deg, #c4b5fd 0%, #93c5fd 50%, #a5f3fc 100%);
+  --bg-accent-hover: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #67e8f9 100%);
+  --bg-glass: rgba(255, 255, 255, 0.7);
+
+  /* Text */
+  --text-primary: #1e1b4b;
+  --text-secondary: #6366f1;
+  --text-muted: #94a3b8;
+  --text-on-accent: #ffffff;
+
+  /* Borders & Shadows */
+  --border-light: rgba(139, 92, 246, 0.15);
+  --border-active: rgba(139, 92, 246, 0.4);
+  --shadow-sm: 0 1px 3px rgba(139, 92, 246, 0.08);
+  --shadow-md: 0 4px 16px rgba(139, 92, 246, 0.1);
+  --shadow-lg: 0 8px 32px rgba(139, 92, 246, 0.15);
+  --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.2);
+
+  /* Radius */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Font */
+  --font-family: 'Inter', 'Noto Sans', 'Noto Sans Tamil', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Telugu', 'Noto Sans Arabic', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-active);
+  border-radius: var(--radius-full);
+}

@@ -74,6 +74,9 @@ function App() {
     speak,
     stop: stopSpeaking,
     isSupported: synthSupported,
+    error: synthError,
+    hasVoiceFor,
+    voices,
   } = useSpeechSynthesis();
 
   // Update input text when speech recognition produces results
@@ -90,6 +93,14 @@ function App() {
       setStatusType('error');
     }
   }, [speechError]);
+
+  // Update status on TTS error
+  useEffect(() => {
+    if (synthError) {
+      setStatusMessage(synthError);
+      setStatusType('error');
+    }
+  }, [synthError]);
 
   // Toggle mic
   const handleMicToggle = useCallback(() => {
@@ -137,9 +148,18 @@ function App() {
 
       // Auto-speak the result
       if (synthSupported) {
-        speak(result, targetLang.code);
-        setStatusMessage('Playing translation…');
-        setStatusType('busy');
+        if (hasVoiceFor(targetLang.code)) {
+          speak(result, targetLang.code);
+          setStatusMessage('Playing translation…');
+          setStatusType('busy');
+        } else {
+          // Still try to speak — the browser may use a default voice
+          speak(result, targetLang.code);
+          setStatusMessage(
+            `Translation done! Voice for ${targetLang.name} may not be available on this device.`
+          );
+          setStatusType('ready');
+        }
       }
 
       // Add to history

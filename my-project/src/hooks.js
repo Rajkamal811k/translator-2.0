@@ -137,42 +137,116 @@ export function useSpeechRecognition() {
 /**
  * Hook for text-to-speech (voice output).
  * Uses the Web Speech Synthesis API.
+ * Properly waits for voices to load before speaking.
  */
 export function useSpeechSynthesis() {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voices, setVoices] = useState([]);
+  const [error, setError] = useState(null);
   const utteranceRef = useRef(null);
 
   const isSupported =
     typeof window !== 'undefined' && 'speechSynthesis' in window;
 
+  // Load voices — they load asynchronously in most browsers
+  useEffect(() => {
+    if (!isSupported) return;
+
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      if (availableVoices.length > 0) {
+        setVoices(availableVoices);
+      }
+    };
+
+    // Try loading immediately (works in Firefox)
+    loadVoices();
+
+    // Listen for async voice loading (needed for Chrome, Edge)
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+    };
+  }, [isSupported]);
+
+  // Find the best matching voice for a language code
+  const findVoice = useCallback(
+    (langCode) => {
+      if (voices.length === 0) return null;
+
+      const langPrefix = langCode.split('-')[0].toLowerCase();
+
+      // Strategy 1: Exact match (e.g., ta-IN === ta-IN)
+      let voice = voices.find(
+        (v) => v.lang.toLowerCase() === langCode.toLowerCase()
+      );
+      if (voice) return voice;
+
+      // Strategy 2: Prefix match (e.g., ta-IN starts with ta)
+      voice = voices.find(
+        (v) => v.lang.toLowerCase().startsWith(langPrefix)
+      );
+      if (voice) return voice;
+
+      // Strategy 3: Try Google / Microsoft voices (higher quality)
+      voice = voices.find(
+        (v) =>
+          v.lang.toLowerCase().startsWith(langPrefix) &&
+          (v.name.includes('Google') || v.name.includes('Microsoft'))
+      );
+      if (voice) return voice;
+
+      return null;
+    },
+    [voices]
+  );
+
   const speak = useCallback(
     (text, langCode = 'en-US') => {
       if (!isSupported || !text) return;
+
+      setError(null);
 
       // Cancel any ongoing speech
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = langCode;
-      utterance.rate = 0.95;
+      utterance.rate = 0.92;
       utterance.pitch = 1;
 
-      // Try to find a voice that matches the language
-      const voices = window.speechSynthesis.getVoices();
-      const langPrefix = langCode.split('-')[0];
-      const matchingVoice = voices.find((v) => v.lang.startsWith(langPrefix));
+      // Find and set the best matching voice
+      const matchingVoice = findVoice(langCode);
       if (matchingVoice) {
         utterance.voice = matchingVoice;
       }
 
-      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        setError(null);
+      };
+
       utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+
+      utterance.onerror = (e) => {
+        setIsSpeaking(false);
+        if (e.error !== 'canceled') {
+          setError(
+            `Voice playback failed for this language. Try using Chrome for best support.`
+          );
+        }
+      };
 
       utteranceRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
+
+      // Chrome has a bug where speech can fail if called immediately
+      // Adding a small delay fixes it
+      setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+      }, 100);
     },
-    [isSupported]
+    [isSupported, findVoice]
   );
 
   const stop = useCallback(() => {
@@ -181,6 +255,14 @@ export function useSpeechSynthesis() {
       setIsSpeaking(false);
     }
   }, [isSupported]);
+
+  // Check if a voice is available for a given language
+  const hasVoiceFor = useCallback(
+    (langCode) => {
+      return findVoice(langCode) !== null;
+    },
+    [findVoice]
+  );
 
   // Cleanup on unmount
   useEffect(() => {
@@ -191,7 +273,7 @@ export function useSpeechSynthesis() {
     };
   }, [isSupported]);
 
-  return { isSpeaking, speak, stop, isSupported };
+  return { isSpeaking, speak, stop, isSupported, error, hasVoiceFor, voices };
 }
 
 /**
